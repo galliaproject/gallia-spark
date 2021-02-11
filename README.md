@@ -1,1 +1,1 @@
-See gallia-core [README](https://github.com/galliaproject/gallia-core/blob/master/README.md).
+See https://github.com/galliaproject/gallia-core#spark-rdds
