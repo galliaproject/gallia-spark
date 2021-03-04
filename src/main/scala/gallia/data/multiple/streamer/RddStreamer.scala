@@ -19,6 +19,7 @@ class RddStreamer[A](sc: SparkContext, val rdd: RDD[A]) extends Streamer[A] {
   def iteratorAndCloseable: (Iterator[A], java.io.Closeable) = (iterator, ??? /* see t210115104555 */)
 
   def iterator: Iterator[A] = rdd.toLocalIterator // TODO: ok?
+  def toView  : ViewRepr[A] = iterator.toSeq.view
   def toList  : List    [A] = rdd.collect().toList
 
   def reduce(op: (A, A) => A): A = rdd.reduce(op)
