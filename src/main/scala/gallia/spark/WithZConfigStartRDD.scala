@@ -35,7 +35,7 @@ trait StartReadFluencyRDD { val conf: StartReadZFluency
     private def streamLinesViaRDD(sc: SparkContext)(input: InputUrlLike): Streamer[Line] =
       sc
         .textFile(input._inputString) // TODO: charset (t210121164950)/compression(t210121164951)
-        .thn(RddStreamer.from(sc))
+        .thn(RddStreamer.from)
   }
 
 // ===========================================================================

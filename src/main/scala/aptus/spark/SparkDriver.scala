@@ -1,8 +1,5 @@
 package aptus.spark
 
-import aptus.Name
-import aptus.UrlString
-
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkConf
 
@@ -11,7 +8,7 @@ object SparkDriver {
 
   def context(
         url    : UrlString = DefaultMaster,
-        name   : Name      = DefaultAppName,
+        name   : AppName   = DefaultAppName,
         managed: Boolean   = true)
     : SparkContext =
       synchronized {
@@ -21,7 +18,7 @@ object SparkDriver {
             createContext(url, name, managed) } }
 
     // ===========================================================================
-    private def createContext(url: String, name: Name, managed: Boolean): SparkContext = {
+    private def createContext(url: String, name: AppName, managed: Boolean): SparkContext = {
       //println("creating spark-context") // TODO: t210122092713 - proper logging
 
       val conf =
