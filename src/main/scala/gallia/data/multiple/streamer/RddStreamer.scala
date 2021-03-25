@@ -6,12 +6,13 @@ import gallia._
 import gallia.spark._
 
 // ===========================================================================
-class RddStreamer[A](sc: SparkContext, val rdd: RDD[A]) extends Streamer[A] {
+class RddStreamer[A: ClassTag /* t210322130619 - generalize to Streamer + as WTT */](val rdd: RDD[A]) extends Streamer[A] {
   val tipe = StreamerType.RDDBased
+  private def sc = this.rdd.sparkContext
 
   // ---------------------------------------------------------------------------
-  private      def _rewrap(x: RDD[A]) = RddStreamer.from(sc)(x)
-  private[gallia] def _modifyUnderlyingRdd(f: RDD[A] => RDD[A]): Streamer[A] = RddStreamer.from(sc)(f(rdd))
+  private         def _rewrap(x: RDD[A]) = RddStreamer.from(x)
+  private[gallia] def _modifyUnderlyingRdd(f: RDD[A] => RDD[A]): Streamer[A] = RddStreamer.from(f(rdd))
 
   // ---------------------------------------------------------------------------
   def egal(that: Streamer[A]): Boolean = ??? // TODO
@@ -19,24 +20,26 @@ class RddStreamer[A](sc: SparkContext, val rdd: RDD[A]) extends Streamer[A] {
   def iteratorAndCloseable: (Iterator[A], java.io.Closeable) = (iterator, ??? /* see t210115104555 */)
 
   def iterator: Iterator[A] = rdd.toLocalIterator // TODO: ok?
-  def toView  : ViewRepr[A] = iterator.toSeq.view
+  def toView  = ???//: ViewRepr[A] = iterator.toSeq.view - TODO: t210315114618 - causes odd compilation issues with gallia-spark, to investigate
   def toList  : List    [A] = rdd.collect().toList
 
   def reduce(op: (A, A) => A): A = rdd.reduce(op)
 
-  def     map[B : ClassTag](f: A =>      B ): Streamer[B] = rdd.    map(f).thn(RddStreamer.from(sc))
-  def flatMap[B : ClassTag](f: A => Coll[B]): Streamer[B] = rdd.flatMap(f(_).asInstanceOf[SparkColl[B] /*FIXME:t210122102109*/]).thn(RddStreamer.from(sc))
+  def     map[B : ClassTag](f: A =>      B ): Streamer[B] = rdd.    map(f).thn(RddStreamer.from)
+  def flatMap[B : ClassTag](f: A => Coll[B]): Streamer[B] = rdd.flatMap(f(_).asInstanceOf[SparkColl[B] /*FIXME:t210122102109*/]).thn(RddStreamer.from)
 
-  def filter(p: A => Boolean): Streamer[A] = rdd.filter(p).thn(RddStreamer.from(sc))
+  def filter(p: A => Boolean): Streamer[A] = rdd.filter(p).thn(RddStreamer.from)
 
-  @gallia.NumberAbstraction
-  def size: Int = rdd.count().toInt//FIXME: t210122094438
+  @gallia.NumberAbstraction def size: Int = rdd.count().toInt//FIXME: t210122094438
 
   def  isEmpty: Boolean = rdd.isEmpty
 
+  // ---------------------------------------------------------------------------
   // TODO: t210122094456 - also sample
-  def take(n: Int): Streamer[A] = ???//x.take(n).thn(RddStreamer.from)
-  def drop(n: Int): Streamer[A] = ???//x.drop(n).thn(RddStreamer.from)
+  // FIXME: t210312092358 - if n is bigger than partition size (both take/drop); maybe offer "takeFew"/"dropFew" with a set max?
+  def take(n: Int): Streamer[A] = rdd.mapPartitionsWithIndex { case (index, itr) => if (index == 0) itr.take(n) else itr }.thn(_rewrap)      
+  def drop(n: Int): Streamer[A] = rdd.mapPartitionsWithIndex { case (index, itr) => if (index == 0) itr.drop(n) else itr }.thn(_rewrap)  
+  // TODO: takeLast/dropLast(n): use rdd.getNumPartitions()
 
   // ===========================================================================
   def distinct: Streamer[A] = _modifyUnderlyingRdd(_.distinct)
@@ -57,11 +60,11 @@ class RddStreamer[A](sc: SparkContext, val rdd: RDD[A]) extends Streamer[A] {
       .rdd
       .groupByKey
       .mapValues(_.toList)
-      .thn(RddStreamer.from(sc))
+      .thn(RddStreamer.from)
 
   // ===========================================================================
   def union[B >: A : ClassTag](that: Streamer[B]): Streamer[B] =
-    RddStreamer.from(sc)(
+    RddStreamer.from(
       this.asInstanceOf[RddStreamer[B]].rdd ++
       that.thn(this.asRDDBased)        .rdd)
 
@@ -70,21 +73,29 @@ class RddStreamer[A](sc: SparkContext, val rdd: RDD[A]) extends Streamer[A] {
     this
       .asInstanceOf[RddStreamer[(K, V)]]
       .thn { dis =>
-        _utils._join(joinType)(
-          left  = dis.rdd,
-          right = that.thn(dis.asRDDBased).rdd) }
-      .flatMap(_utils.joinCombining(combiner))
-      .thn(RddStreamer.from(sc))
+        that.tipe match {
+          case StreamerType.ViewBased => // TODO: t210322111234 - [res] - determine if using hash join is implicit (if Seq) or explicit (via conf), or a combination
+            RddStreamerUtils
+              ._hashJoin(joinType)(
+                left  = dis.rdd,
+                right = that.thn(dis.asRDDBased).rdd) // TODO: t210322110948 - wasteful: to broadcast directly?  
+          case _ =>
+            RddStreamerUtils
+              ._join(joinType)(
+                left  = dis.rdd,
+                right = that.thn(dis.asRDDBased).rdd) } }
+      .flatMap(RddStreamerUtils.postJoinCombining(combiner))
+      .thn(RddStreamer.from)
 
   // ---------------------------------------------------------------------------
   def coGroup[K: ClassTag, V: ClassTag](joinType: JoinType)(that: Streamer[(K, V)])(implicit ev: A <:< (K, V)): Streamer[(K, (Iterable[V], Iterable[V]))] =
     this
       .asInstanceOf[RddStreamer[(K, V)]]
       .thn { dis =>
-        _utils._coGroup(joinType)(
+        RddStreamerUtils._coGroup(joinType)(
           left  = dis.rdd,
           right = that.thn(dis.asRDDBased).rdd) }
-      .thn(RddStreamer.from(sc))
+      .thn(RddStreamer.from)
 
   // ===========================================================================
   def asRDDBased[B >: A : ClassTag](that: Streamer[B]): RddStreamer[B] = asMeBased(that).asInstanceOf[RddStreamer[B]]
@@ -92,16 +103,16 @@ class RddStreamer[A](sc: SparkContext, val rdd: RDD[A]) extends Streamer[A] {
     // ---------------------------------------------------------------------------
     override def asMeBased[B >: A : ClassTag](that: Streamer[B]): Streamer[B] =
       that.tipe match {
-          case StreamerType.ViewBased | StreamerType.IteratorBased =>
-            sc.parallelize(that.toList).thn(RddStreamer.from(sc))
+        case StreamerType.ViewBased | StreamerType.IteratorBased =>
+          sc.parallelize(that.toList).thn(RddStreamer.from)
 
-          case StreamerType.RDDBased => that }
+        case StreamerType.RDDBased => that }
 
 }
 
 // ===========================================================================
 object RddStreamer {
-  def from[A](sc: SparkContext)(rdd: RDD[A]): Streamer[A] = new RddStreamer(sc, rdd)
+  def from[A: ClassTag](rdd: RDD[A]): Streamer[A] = new RddStreamer(rdd)
 }
 
 // ===========================================================================
