@@ -19,7 +19,7 @@ package object spark {
   val  RddStreamer    = gallia.data.multiple.streamer.RddStreamer
 
   // ===========================================================================
-  def galliaSparkContext(name: AppName= DefaultAppName): SparkContext = SparkDriver.context(name, managed = false)
+  def galliaSparkContext(name: AppName = DefaultAppName): SparkContext = SparkDriver.context(name, managed = false)
 
   // ===========================================================================
   implicit class StartReadZFluency__(override val conf : gallia.io.in.StartReadZFluency) extends StartReadFluencyRDD

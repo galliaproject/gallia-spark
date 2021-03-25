@@ -1,6 +1,5 @@
 // gallia-spark; TODO: t210309100048 - relies on symlink to gallia-core's project/*.scala files; no (reasonnable) sbt way? windows users will have to copy them instead?
 
-
 // ===========================================================================
 lazy val root = (project in file("."))
   .settings(
@@ -19,8 +18,8 @@ lazy val sparkVersion212 = "2.4.5"
 // ---------------------------------------------------------------------------
 libraryDependencies +=
   (scalaBinaryVersion.value match {
-    case "2.13" => "org.apache.spark" %% "spark-core" % sparkVersion213 % "provided" /* see 201217114746 */ withSources() withJavadoc()
-    case _      => "org.apache.spark" %% "spark-core" % sparkVersion212 % "provided" /* see 201217114746 */ withSources() }) // not found: https://repo1.maven.org/maven2/org/apache/spark/spark-core_2.12/2.4.5/spark-core_2.12-2.4.5-javadoc.jar
+    case "2.13" => "org.apache.spark" %% "spark-core" % sparkVersion213 % "provided" withSources() withJavadoc()
+    case _      => "org.apache.spark" %% "spark-core" % sparkVersion212 % "provided" withSources() }) // withJavadoc(): not found https://repo1.maven.org/maven2/org/apache/spark/spark-core_2.12/2.4.5/spark-core_2.12-2.4.5-javadoc.jar
 
 // ===========================================================================
 
