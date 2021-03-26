@@ -80,15 +80,27 @@ package object spark {
     // ---------------------------------------------------------------------------
     case class RddOutputZ(uriString: String) extends ActionZOb {
         def vldt   (c: Cls) = Nil //TODO
-        def atomzos(c: Cls) = Seq(_RddOutputZ(uriString)) } // TODO: t210322101244 - also write schema too (coalesce to 1 first)            
+        def atomzos(c: Cls) = Seq(
+            _SchemaRddOutput(c, uriString, gallia.atoms.AtomsXO.DefaultSchemaSuffix),            
+            _RddOutputZ(uriString)) }
 
       // ---------------------------------------------------------------------------    
       case class _RddOutputZ(uriString: String) extends AtomZO {
-        def naive(z: Objs) {
-          z .values
-            .asInstanceOf[RddStreamer[Obj]] /* TODO: wrap error */
-            .rdd
-            .saveAsTextFile(uriString, Compression) } }      
+        def naive(z: Objs) { rdd(z).saveAsTextFile(uriString, Compression) } }
+
+      // ---------------------------------------------------------------------------
+      case class _SchemaRddOutput(c: Cls, uriString: String/*, urlLike: UrlLike*/, suffix: String) extends AtomZO {
+        def naive(z: Objs) {       
+          rdd(z)
+            .sparkContext
+            .parallelize(Seq(c .formatPrettyJson /* TODO: t210128103821 - format configurable */), numSlices = 1)                  
+            .saveAsTextFile(uriString.append(suffix)) } } // TODO: t210326155456 - any way not to write it as part-00000?
+
+      // ===========================================================================
+      private def rdd(z: Objs): RDD[Obj] =
+        z .values
+          .asInstanceOf[RddStreamer[Obj]] /* TODO: wrap error */
+          .rdd
   }
 
 }
