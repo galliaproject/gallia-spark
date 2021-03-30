@@ -37,8 +37,8 @@ package object spark {
   }
             
   // ===========================================================================
-  object in {
-  
+  object in { // TODO t210330110143 - p2 - align with core's io.in abstraction
+
 	  def tsvWithHeader(sc: SparkContext, path: String)(key1: KeyW, more: KeyW*): HeadS =     
   			  in.RddInputLines(sc, path, Some(1))
   			  .thn(heads.Head.inputZ)
@@ -68,12 +68,13 @@ package object spark {
             sc.textFile(in)
               .thn(RddStreamer.from)        
               .map(line => obj(_line -> line))
-              .thnOpt(drop)(n => _.drop(n))
+              .thnOpt(drop)(n => _.drop(n)) // TODO: t210330110534 - as separate atom
         }
     }
       
   // ===========================================================================
-  object out {
+  object out { // t210330110144 - p2 - align with core's io.out abstraction
+
     var Compression: Class[_ <: CompressionCodec] = classOf[GzipCodec]  // TODO: t210121164951 - configurable compression
       //no compression: sc.hadoopConfiguration.set("mapred.output.compress", "false") + DefaultCodec
 
