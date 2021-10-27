@@ -1,7 +1,7 @@
 package gallia.heads
 
 import gallia.spark._
-import gallia.atoms.Obj
+import gallia.Obj
 
 // ===========================================================================
 trait HeadZRdd { val headZ: HeadZ
@@ -12,7 +12,7 @@ trait HeadZRdd { val headZ: HeadZ
   def rdd(f: RDD[Obj] => RDD[Obj]): HeadZ =
     headZ._modifyUnderlyingStreamer(_ match {
       case rddStreamer: RddStreamer[Obj] => rddStreamer._modifyUnderlyingRdd(f)
-      case    streamer                   => gallia.runtimeError("TODO:201106123320:not RDD-based") /* TODO: catch earlier? */ })
+      case    streamer                   => gallia.dataError("TODO:201106123320:not RDD-based") /* TODO: catch earlier? */ })
 
   // =========================================================================== 
   @annotation.nowarn def writeRDD(path: String) { // TODO: align with write abstraction

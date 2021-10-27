@@ -61,7 +61,7 @@ package object spark {
           def naive: Option[Objs] = 
               lines(sc)(inputPath, drop)
                 .thn(Objs.build)
-                .as.some
+                .in.some
     
           // ---------------------------------------------------------------------------
           private def lines(sc: SparkContext)(in: String, drop: Option[Int]): Streamer[Obj] = 
