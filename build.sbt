@@ -6,7 +6,7 @@ lazy val root = (project in file("."))
     organizationName     := "Gallia Project",
     organization         := "io.github.galliaproject", // *must* match groupId for sonatype
     name                 := "gallia-spark",
-    version              := "0.3.0",    
+    version              := "0.3.1",    
     homepage             := Some(url("https://github.com/galliaproject/gallia-spark")),
     scmInfo              := Some(ScmInfo(
         browseUrl  = url("https://github.com/galliaproject/gallia-spark"),
@@ -19,7 +19,7 @@ lazy val root = (project in file("."))
 resolvers += "Apache Repository" at "https://repository.apache.org/content/repositories/snapshots"
 
 // ---------------------------------------------------------------------------
-lazy val galliaVersion   = "0.3.0"
+lazy val galliaVersion   = "0.3.1"
 
 lazy val sparkVersion213 = "3.2.0-20210212.011521-17" // per https://repository.apache.org/content/repositories/snapshots/org/apache/spark/spark-core_2.13/3.2.0-SNAPSHOT/, see http://apache-spark-developers-list.1001551.n3.nabble.com/FYI-Scala-2-13-Maven-Artifacts-td30616.html
 lazy val sparkVersion212 = "2.4.5"
