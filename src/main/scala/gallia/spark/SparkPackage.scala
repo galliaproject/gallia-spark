@@ -14,8 +14,11 @@ package object spark {
 
   type Line = aptus.Line
 
-  type RddStreamer[A] = gallia.data.multiple.streamer.RddStreamer[A]
-  val  RddStreamer    = gallia.data.multiple.streamer.RddStreamer
+  // ---------------------------------------------------------------------------
+  type Streamer[A] = gallia.streamer.Streamer[A]
+
+  type RddStreamer[A] = gallia.streamer.RddStreamer[A]
+  val  RddStreamer    = gallia.streamer.RddStreamer
 
   // ===========================================================================
   private[gallia] implicit class GalliaSparkAnything_[A](value: A) {

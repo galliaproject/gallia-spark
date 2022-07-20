@@ -1,5 +1,5 @@
 package gallia
-package data.multiple.streamer
+package streamer
 
 import org.apache.spark.broadcast.Broadcast
 import aptus._

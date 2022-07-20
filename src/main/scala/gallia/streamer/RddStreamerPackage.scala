@@ -1,4 +1,4 @@
-package gallia.data.multiple
+package gallia
 
 // ===========================================================================
 package object streamer {
@@ -6,7 +6,7 @@ package object streamer {
   val  JoinType = gallia.heads.merging.MergingData.JoinType
 
   // ---------------------------------------------------------------------------
-  private[streamer] val _utils = gallia.data.multiple.streamer.RddStreamerUtils
+  private[streamer] val _utils = gallia.streamer.RddStreamerUtils
 }
 
 // ===========================================================================
