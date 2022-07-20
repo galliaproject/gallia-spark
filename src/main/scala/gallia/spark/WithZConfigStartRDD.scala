@@ -1,6 +1,6 @@
-package gallia.spark
+package gallia
+package spark
 
-import aptus.Anything_
 import aptus.spark.SparkDriver
 
 import gallia.io.in._
@@ -29,13 +29,13 @@ trait StartReadFluencyRDD { val conf: StartReadZFluency
     private def streamLinesViaRDD(input: InputUrlLike): Streamer[Line] =
         SparkDriver
           .context()
-          .thn(streamLinesViaRDD(_)(input))
+          .pipe(streamLinesViaRDD(_)(input))
 
     // ---------------------------------------------------------------------------
     private def streamLinesViaRDD(sc: SparkContext)(input: InputUrlLike): Streamer[Line] =
       sc
         .textFile(input._inputString) // TODO: charset (t210121164950)/compression(t210121164951)
-        .thn(RddStreamer.from)
+        .pype(RddStreamer.from)
   }
 
 // ===========================================================================

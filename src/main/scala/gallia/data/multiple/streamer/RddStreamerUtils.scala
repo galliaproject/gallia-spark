@@ -1,6 +1,5 @@
-package gallia.data.multiple.streamer
-
-import aptus.Anything_
+package gallia
+package data.multiple.streamer
 
 import gallia.spark._
 
@@ -33,7 +32,7 @@ private object RddStreamerUtils {
           // TODO: t201126111306 - confirm no better way; no {left,right,inner}CoGroup available it seems
           //   note: using the {left,right,inner}OuterJoin here would force us to redo a re-grouping
           .cogroup(right)
-          .thn(postCoGroup(joinType))
+          .pype(postCoGroup(joinType))
 
       // ---------------------------------------------------------------------------
       private def postCoGroup[K: ClassTag, V: ClassTag](joinType: JoinType)(coGrouped: RDD[(K, (Iterable[V], Iterable[V]))]): RDD[(K, (Iterable[V], Iterable[V]))] = {

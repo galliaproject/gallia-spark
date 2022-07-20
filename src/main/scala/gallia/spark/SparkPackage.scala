@@ -11,12 +11,16 @@ package object spark {
   type SparkContext = org.apache.spark.SparkContext
 
   type RDD     [A]  = org.apache.spark.rdd.RDD[A]
-  type Streamer[A]  = gallia.data.multiple.Streamer[A]
 
   type Line = aptus.Line
 
   type RddStreamer[A] = gallia.data.multiple.streamer.RddStreamer[A]
   val  RddStreamer    = gallia.data.multiple.streamer.RddStreamer
+
+  // ===========================================================================
+  private[gallia] implicit class GalliaSparkAnything_[A](value: A) {
+    /** so as to not conflict with Spark RDD's own pipe method */
+    private[gallia] def pype[B](f: A => B): B = f(value) }
 
   // ===========================================================================
   def galliaSparkContext(name: AppName = DefaultAppName): SparkContext = SparkDriver.context(name, managed = false)
@@ -40,9 +44,9 @@ package object spark {
   object in { // TODO t210330110143 - p2 - align with core's io.in abstraction
 
 	  def tsvWithHeader(sc: SparkContext, path: String)(key1: KeyW, more: KeyW*): HeadS =     
-  			  in.RddInputLines(sc, path, Some(1))
-  			  .thn(heads.Head.inputZ)
-  			  .thn(tsvFromLine(key1, more:_*))    
+            in.RddInputLines(sc, path, Some(1))
+              .pipe(heads.Head.inputZ)
+              .pipe(tsvFromLine(key1, more:_*))    
   
       // ---------------------------------------------------------------------------
       private def tsvFromLine(key1: KeyW, more: KeyW*): HeadS => HeadS =
@@ -60,15 +64,15 @@ package object spark {
         case class _RddInputLines(sc: SparkContext, inputPath: String, drop: Option[Int]) extends AtomIZ {
           def naive: Option[Objs] = 
               lines(sc)(inputPath, drop)
-                .thn(Objs.build)
+                .pipe(Objs.build)
                 .in.some
     
           // ---------------------------------------------------------------------------
           private def lines(sc: SparkContext)(in: String, drop: Option[Int]): Streamer[Obj] = 
             sc.textFile(in)
-              .thn(RddStreamer.from)        
+              .pype(RddStreamer.from)
               .map(line => obj(_line -> line))
-              .thnOpt(drop)(n => _.drop(n)) // TODO: t210330110534 - as separate atom
+              .pipeOpt(drop)(n => _.drop(n)) // TODO: t210330110534 - as separate atom
         }
     }
       
