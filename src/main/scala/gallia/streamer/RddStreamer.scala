@@ -12,10 +12,7 @@ class RddStreamer[A: ClassTag /* t210322130619 - generalize to Streamer + as WTT
 
   // ---------------------------------------------------------------------------
   private         def _rewrap(x: RDD[A]) = RddStreamer.from(x)
-  private[gallia] def _modifyUnderlyingRdd(f: RDD[A] => RDD[A]): Streamer[A] = RddStreamer.from(f(rdd))
-
-  // ---------------------------------------------------------------------------
-  def egal(that: Streamer[A]): Boolean = ??? // TODO
+  private[gallia] def _alter[B : ClassTag](f: RDD[A] => RDD[B]): Streamer[B] = RddStreamer.from(f(rdd))
 
   // ===========================================================================
   private[gallia] def selfClosingIterator:                 Iterator[A] = rdd.toLocalIterator // TODO: ok? nothing to close?
@@ -23,7 +20,7 @@ class RddStreamer[A: ClassTag /* t210322130619 - generalize to Streamer + as WTT
 
   // ---------------------------------------------------------------------------
 //override def toView  = ???//: ViewRepr[A] = iterator.toSeq.view - TODO: t210315114618 - causes odd compilation issues with gallia-spark, to investigate
-  override def toList  : List    [A] = rdd.collect().toList
+  override def toList: List[A] = rdd.collect().toList
 
   // ===========================================================================
   override def     map[B : ClassTag](f: A =>             B ): Streamer[B] = rdd.    map(f).pype(RddStreamer.from)
@@ -32,42 +29,46 @@ class RddStreamer[A: ClassTag /* t210322130619 - generalize to Streamer + as WTT
   override def filter(p: A => Boolean): Streamer[A] = rdd.filter(p).pype(RddStreamer.from)
   override def find  (p: A => Boolean): Option  [A] = rdd.filter(p).take(1).pipe { x => if (x.assert(_.size <= 1).size == 1) Some(x.head) else None }
 
-  @gallia.NumberAbstraction
-  override def size: Int = rdd.count().toInt//FIXME: t210122094438
-
+  @IntSize
+  override def size: Int = rdd.count().toInt //FIXME: t210122094438
+  
   override def isEmpty: Boolean = rdd.isEmpty
 
   // ---------------------------------------------------------------------------
-  // TODO: t210122094456 - also sample
   // FIXME: t210312092358 - if n is bigger than partition size (both take/drop); maybe offer "takeFew"/"dropFew" with a set max?
   override def take(n: Int): Streamer[A] = rdd.mapPartitionsWithIndex { case (index, itr) => if (index == 0) itr.take(n) else itr }.pype(_rewrap)
   override def drop(n: Int): Streamer[A] = rdd.mapPartitionsWithIndex { case (index, itr) => if (index == 0) itr.drop(n) else itr }.pype(_rewrap)
   // TODO: takeLast/dropLast(n): use rdd.getNumPartitions()
 
-override def takeWhile(p: A => Boolean): Streamer[A] = ???
-override def dropWhile(p: A => Boolean): Streamer[A] = ???
+  // ---------------------------------------------------------------------------
+  override def takeWhile(p: A => Boolean): Streamer[A] = aptus.illegalState("220721130550 - takeWhile unsupported with RDDs")
+  override def dropWhile(p: A => Boolean): Streamer[A] = aptus.illegalState("220721130551 - dropWhile unsupported with RDDs")
 
+  // TODO: t210122094456 - also off sample
+
+  // ---------------------------------------------------------------------------
   override def reduce(op: (A, A) => A): A = rdd.reduce(op)
 
   // ===========================================================================
-  override def distinct: Streamer[A] = _modifyUnderlyingRdd(_.distinct)
-  // TODO: ensure distinct - t201126163157 - maybe sort followed by rdd.mapPartitions(_.sliding(size, step), preservesPartitioning)?
+  override def distinct: Streamer[A] = _alter(_.distinct)
+  // TODO: cheaper ensure distinct - t201126163157 - maybe sort followed by rdd.mapPartitions(_.sliding(size, step), preservesPartitioning)?
 
   // ===========================================================================
-  override def sortBy[K](meta: atoms.utils.SuperMetaPair[K])(f: A => K): Streamer[A] =
-    _modifyUnderlyingRdd(_.sortBy(f)(meta.ord, meta.ctag)) //TODO: t210122094521 - allow setting numPartitions
+  override def sortBy[K](meta: atoms.utils.SuperMetaPair[K])(f: A => K): Streamer[A] = //TODO: t210122094521 - allow setting numPartitions properly
+    _alter(_.sortBy(f, numPartitions = gallia.spark.numPartitions(sc))(meta.ord, meta.ctag))
 
   // ===========================================================================
   override def groupByKey[K: ClassTag, V: ClassTag](implicit ev: A <:< (K, V)): Streamer[(K, List[V])] =
-    this
-      .asInstanceOf[RddStreamer[(K, V)]]
-      .rdd
-      .groupByKey
-      .mapValues(_.toList)
-      .pype(RddStreamer.from)
+    this.asInstanceOf[RddStreamer[(K, V)]]._alter { _.groupByKey.mapValues(_.toList) }
 
   // ===========================================================================
-  override def zip  [B >: A : ClassTag](that: Streamer[B], combiner: (B, B) => B): Streamer[B] = ??? // TODO
+  override def zip[B >: A : ClassTag](that: Streamer[B], combiner: (B, B) => B): Streamer[B] =
+    RddStreamer.from(
+      (   this.asInstanceOf[RddStreamer[B]].rdd zip // ensures same size already (else throws a SparkException)
+          that.pype(this.asRDDBased)       .rdd)
+        .map(combiner.tupled) )
+
+  // ---------------------------------------------------------------------------
   override def union[B >: A : ClassTag](that: Streamer[B]): Streamer[B] =
     RddStreamer.from(
       this.asInstanceOf[RddStreamer[B]].rdd ++
@@ -96,23 +97,22 @@ override def dropWhile(p: A => Boolean): Streamer[A] = ???
   override def coGroup[K: ClassTag, V: ClassTag](joinType: JoinType)(that: Streamer[(K, V)])(implicit ev: A <:< (K, V)): Streamer[(K, (Iterable[V], Iterable[V]))] =
     this
       .asInstanceOf[RddStreamer[(K, V)]]
-      .pype { dis =>
+      .pype { self =>
         RddStreamerUtils._coGroup(joinType)(
-          left  = dis.rdd,
-          right = that.pype(dis.asRDDBased).rdd) }
+          left  = self                 .rdd,
+          right = self.asRDDBased(that).rdd) }
       .pype(RddStreamer.from)
 
   // ===========================================================================
-  override def toViewBased    : Streamer[A] =     ViewStreamer.from(toList)             // TODO: confirm closes everything that needs closing at the end of iteration?
-  override def toIteratorBased: Streamer[A] = IteratorStreamer.from(closeabledIterator) // TODO: confirm closes everything that needs closing at the end of iteration?
+  override def toViewBased    : Streamer[A] = ViewStreamer.from(toList)                                                                                // TODO: confirm closes everything that needs closing at the end of iteration?
+  override def toIteratorBased: Streamer[A] = new DataRegenerationClosure[A] { def regenerate = () => closeabledIterator }.pipe(IteratorStreamer.from) // TODO: confirm closes everything that needs closing at the end of iteration?
 
   // ---------------------------------------------------------------------------
            def asRDDBased[B >: A : ClassTag](that: Streamer[B]): RddStreamer[B] = toMeBased(that).asInstanceOf[RddStreamer[B]]
-  override def toMeBased [B >: A : ClassTag](that: Streamer[B]): Streamer   [B] =
-    that.tipe match {
-      case StreamerType.ViewBased | StreamerType.IteratorBased => RddStreamer.from(sc.parallelize(that.toList))
-      case StreamerType.RDDBased                               => that }
-
+  override def toMeBased [B >: A : ClassTag](that: Streamer[B]): Streamer   [B] = that.tipe match {
+    case StreamerType.ViewBased     => that.toList.pype(sc.parallelize(_, numPartitions(sc))).pype(RddStreamer.from)
+    case StreamerType.IteratorBased => aptus.illegalState(data.multiple.CantMixIteratorAndRddProcessing)
+    case StreamerType.RDDBased      => that }
 }
 
 // ===========================================================================
