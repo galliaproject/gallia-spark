@@ -2,6 +2,7 @@ package gallia
 package streamer
 
 import aptus.Anything_
+import atoms.utils.SuperMetaPair
 import gallia.spark._
 
 // ===========================================================================
@@ -54,7 +55,7 @@ class RddStreamer[A: ClassTag /* t210322130619 - generalize to Streamer + as WTT
   // TODO: cheaper ensure distinct - t201126163157 - maybe sort followed by rdd.mapPartitions(_.sliding(size, step), preservesPartitioning)?
 
   // ===========================================================================
-  override def sortBy[K](meta: atoms.utils.SuperMetaPair[K])(f: A => K): Streamer[A] = //TODO: t210122094521 - allow setting numPartitions properly
+  override def sortBy[K](meta: SuperMetaPair[K])(f: A => K): Streamer[A] = //TODO: t210122094521 - allow setting numPartitions properly
     _alter(_.sortBy(f, numPartitions = gallia.spark.numPartitions(sc))(meta.ord, meta.ctag))
 
   // ===========================================================================
