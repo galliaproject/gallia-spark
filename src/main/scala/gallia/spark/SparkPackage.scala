@@ -54,7 +54,8 @@ package object spark {
     def lines(path: String): HeadS = SparkRddIn.lines(sc, path)
 
     // ---------------------------------------------------------------------------
-    def jsonLines(schema: Cls)(path: String): HeadS = SparkRddIn.jsonLines(sc, schema, path)
+    def jsonLines(schema: Cls)            (path: String): HeadS = SparkRddIn.jsonLines(sc, schema, path)
+    def jsonLines(field1: Fld, more: Fld*)(path: String): HeadS = SparkRddIn.jsonLines(sc, cls((field1 +: more).toList), path)
 
     // ---------------------------------------------------------------------------
     def csvWithHeader(path: String)(key1: KeyW, more: KeyW*): HeadS = SparkRddIn.csvWithHeader(sc, path)(key1, more:_*)
