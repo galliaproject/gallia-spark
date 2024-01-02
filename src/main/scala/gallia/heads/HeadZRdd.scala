@@ -18,12 +18,12 @@ trait HeadZRdd { val headZ: HeadZ
       case _                             => gallia.dataError("TODO:201106123320:not RDD-based") /* TODO: catch earlier? */ })
 
   // =========================================================================== 
-  @annotation.nowarn def writeRDD(path: String) { // TODO: align with write abstraction
+  @annotation.nowarn def writeRDD(path: String): Unit = { // TODO: align with write abstraction
     headZ
-      .zo(SparkRddOut.RddOutputZ(path)).end.runz().either match {
-        case Left (errors)  => throw errors.metaErrorOpt.get
-        case Right(success) => () } }
-   
-}
+      .zo(SparkRddOut.RddOutputZ(path))
+      .end ()
+      .runz().either match {
+        case Left (errors) => throw errors.metaErrorOpt.get
+        case Right(_)      => () } } }
 
 // ===========================================================================

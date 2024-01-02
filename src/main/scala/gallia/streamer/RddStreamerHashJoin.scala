@@ -8,7 +8,7 @@ import gallia.spark._
 // ===========================================================================
 private object RddStreamerHashJoin {
 
-  def innerHashJoinWithLeftBias[K: ClassTag, V: ClassTag](
+  def innerHashJoinWithLeftBias[K: CWTT, V: CWTT](
         big  : RDD [(K, V)],
         small: RDD [(K, V)])
       : RDD[(K, (V, V))] = {   
@@ -28,7 +28,7 @@ private object RddStreamerHashJoin {
   }
 
   // ===========================================================================
-  def leftHashJoin[K: ClassTag, V: ClassTag](
+  def leftHashJoin[K: CWTT, V: CWTT](
         big  : RDD [(K, V)],
         small: RDD [(K, V)])
       : RDD[(K, (V, Option[V]))] = {
@@ -48,7 +48,7 @@ private object RddStreamerHashJoin {
   }
 
   // ===========================================================================
-  def rightHashJoin[K: ClassTag, V: ClassTag](
+  def rightHashJoin[K: CWTT, V: CWTT](
         small: RDD [(K, V)],
         big  : RDD [(K, V)])
       : RDD[(K, (Option[V], V))] = {
@@ -70,11 +70,13 @@ private object RddStreamerHashJoin {
   // ===========================================================================
   object PreGrouped {
 
-    def innerHashJoinWithLeftBias[K: ClassTag, V: ClassTag](
+    def innerHashJoinWithLeftBias[K: CT, V: CT](
           big  : RDD [(K, V)],
           small: RDD [(K, V)])
         : RDD[(K, (V, V))] = {
-      val broadcast: Broadcast[collection.Map[K, V]] = big.sparkContext.broadcast(small.collectAsMap())
+      val broadcast: Broadcast[collection.Map[K, V]] =
+        big.sparkContext.broadcast(
+          small.collectAsMap())
   
       big
         .mapPartitions(
@@ -87,35 +89,33 @@ private object RddStreamerHashJoin {
     }
   
     // ===========================================================================
-    def leftHashJoin[K: ClassTag, V: ClassTag](
+    def leftHashJoin[K: CT, V: CT](
           big  : RDD [(K, V)],
           small: RDD [(K, V)])
         : RDD[(K, (V, Option[V]))] = {
-      val broadcast: Broadcast[collection.Map[K, V]] = big.sparkContext.broadcast(small.collectAsMap())
+      val broadcast: Broadcast[collection.Map[K, V]] =
+        big.sparkContext.broadcast(
+          small.collectAsMap())
   
       big
         .mapPartitions(
           _.map { case (key, leftValue) =>
             (key, (leftValue, broadcast.value.get(key))) },
-          preservesPartitioning = true)
-    }
+          preservesPartitioning = true) }
   
     // ===========================================================================
-    def rightHashJoin[K: ClassTag, V: ClassTag](
+    def rightHashJoin[K: CT, V: CT](
           small: RDD [(K, V)],
           big  : RDD [(K, V)])
         : RDD[(K, (Option[V], V))] = {
-      val broadcast: Broadcast[collection.Map[K, V]] = big.sparkContext.broadcast(small.collectAsMap())
+      val broadcast: Broadcast[collection.Map[K, V]] =
+        big.sparkContext.broadcast(
+          small.collectAsMap())
   
       big
         .mapPartitions(
           _.map { case (key, rightValue) =>
             (key, (broadcast.value.get(key), rightValue)) },
-          preservesPartitioning = true)
-    }
-    
-  }
-  
-}
+          preservesPartitioning = true) } } }
 
 // ===========================================================================

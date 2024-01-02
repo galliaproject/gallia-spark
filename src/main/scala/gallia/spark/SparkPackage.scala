@@ -4,8 +4,6 @@ import aptus.spark._
 
 // ===========================================================================
 package object spark {
-  type ClassTag[A]  = scala.reflect.ClassTag[A]
-
   type SparkContext = org.apache.spark.SparkContext
 
   type RDD     [A]  = org.apache.spark.rdd.RDD[A]
