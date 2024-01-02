@@ -8,7 +8,7 @@ import gallia.spark._
 // ===========================================================================
 private object RddStreamerHashJoin {
 
-  def innerHashJoinWithLeftBias[K: CWTT, V: CWTT](
+  def innerHashJoinWithLeftBias[K: CT, V: CT](
         big  : RDD [(K, V)],
         small: RDD [(K, V)])
       : RDD[(K, (V, V))] = {   
@@ -24,11 +24,10 @@ private object RddStreamerHashJoin {
             .flatMap {
               _.map { rightValue =>
                 (key, (leftValue, rightValue)) } } },
-        preservesPartitioning = true)
-  }
+        preservesPartitioning = true) }
 
   // ===========================================================================
-  def leftHashJoin[K: CWTT, V: CWTT](
+  def leftHashJoin[K: CT, V: CT](
         big  : RDD [(K, V)],
         small: RDD [(K, V)])
       : RDD[(K, (V, Option[V]))] = {
@@ -44,11 +43,10 @@ private object RddStreamerHashJoin {
              match {
               case None              => Seq(                            (key, (leftValue, None)))
               case Some(rightValues) => rightValues.map { rightValue => (key, (leftValue, Some(rightValue))) } } },
-        preservesPartitioning = true)
-  }
+        preservesPartitioning = true) }
 
   // ===========================================================================
-  def rightHashJoin[K: CWTT, V: CWTT](
+  def rightHashJoin[K: CT, V: CT](
         small: RDD [(K, V)],
         big  : RDD [(K, V)])
       : RDD[(K, (Option[V], V))] = {
@@ -64,8 +62,7 @@ private object RddStreamerHashJoin {
              match {
               case None             => Seq(                          (key, (None,            rightValue)))
               case Some(leftValues) => leftValues.map { leftValue => (key, (Some(leftValue), rightValue)) } } },
-        preservesPartitioning = true)
-  }
+        preservesPartitioning = true) }
   
   // ===========================================================================
   object PreGrouped {
@@ -85,8 +82,7 @@ private object RddStreamerHashJoin {
               .value.get(key)
               .map { rightValue =>
                 (key, (leftValue, rightValue)) } },
-          preservesPartitioning = true)
-    }
+          preservesPartitioning = true) }
   
     // ===========================================================================
     def leftHashJoin[K: CT, V: CT](

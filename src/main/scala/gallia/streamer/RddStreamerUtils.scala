@@ -34,7 +34,7 @@ private object RddStreamerUtils {
           .pype(postCoGroup(joinType))
 
       // ---------------------------------------------------------------------------
-      private def postCoGroup[K: CWTT, V: CWTT](joinType: JoinType)(coGrouped: RDD[(K, (Iterable[V], Iterable[V]))]): RDD[(K, (Iterable[V], Iterable[V]))] = {
+      private def postCoGroup[K: CT, V: CT](joinType: JoinType)(coGrouped: RDD[(K, (Iterable[V], Iterable[V]))]): RDD[(K, (Iterable[V], Iterable[V]))] = {
         joinType match {
             case JoinType.full  => coGrouped
             case JoinType.left  => coGrouped.filter(_._2._1.nonEmpty)
