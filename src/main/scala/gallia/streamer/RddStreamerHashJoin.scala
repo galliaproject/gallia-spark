@@ -8,7 +8,7 @@ import gallia.spark._
 // ===========================================================================
 private object RddStreamerHashJoin {
 
-  def innerHashJoinWithLeftBias[K: CT, V: CT](
+  def innerHashJoinWithLeftBias[K: ClassTag, V: ClassTag](
         big  : RDD [(K, V)],
         small: RDD [(K, V)])
       : RDD[(K, (V, V))] = {   
@@ -27,7 +27,7 @@ private object RddStreamerHashJoin {
         preservesPartitioning = true) }
 
   // ===========================================================================
-  def leftHashJoin[K: CT, V: CT](
+  def leftHashJoin[K: ClassTag, V: ClassTag](
         big  : RDD [(K, V)],
         small: RDD [(K, V)])
       : RDD[(K, (V, Option[V]))] = {
@@ -46,7 +46,7 @@ private object RddStreamerHashJoin {
         preservesPartitioning = true) }
 
   // ===========================================================================
-  def rightHashJoin[K: CT, V: CT](
+  def rightHashJoin[K: ClassTag, V: ClassTag](
         small: RDD [(K, V)],
         big  : RDD [(K, V)])
       : RDD[(K, (Option[V], V))] = {
@@ -67,7 +67,7 @@ private object RddStreamerHashJoin {
   // ===========================================================================
   object PreGrouped {
 
-    def innerHashJoinWithLeftBias[K: CT, V: CT](
+    def innerHashJoinWithLeftBias[K: ClassTag, V: ClassTag](
           big  : RDD [(K, V)],
           small: RDD [(K, V)])
         : RDD[(K, (V, V))] = {
@@ -85,7 +85,7 @@ private object RddStreamerHashJoin {
           preservesPartitioning = true) }
   
     // ===========================================================================
-    def leftHashJoin[K: CT, V: CT](
+    def leftHashJoin[K: ClassTag, V: ClassTag](
           big  : RDD [(K, V)],
           small: RDD [(K, V)])
         : RDD[(K, (V, Option[V]))] = {
@@ -100,7 +100,7 @@ private object RddStreamerHashJoin {
           preservesPartitioning = true) }
   
     // ===========================================================================
-    def rightHashJoin[K: CT, V: CT](
+    def rightHashJoin[K: ClassTag, V: ClassTag](
           small: RDD [(K, V)],
           big  : RDD [(K, V)])
         : RDD[(K, (Option[V], V))] = {

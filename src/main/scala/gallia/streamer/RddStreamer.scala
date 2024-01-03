@@ -60,8 +60,8 @@ class RddStreamer[A: WTT /* t210322130619 - generalize to Streamer + as WTT */](
 
   // ===========================================================================
   override def groupByKey[K: WTT, V: WTT](implicit ev: A <:< (K, V)): Streamer[(K, List[V])] = {
-    implicit val ctk: CT[K] = ctag[K]
-    implicit val ctv: CT[V] = ctag[V]
+    implicit val ctk: ClassTag[K] = ctag[K]
+    implicit val ctv: ClassTag[V] = ctag[V]
 
     this.asInstanceOf[RddStreamer[(K, V)]]._alter { _.groupByKey.mapValues(_.toList) } }
 
@@ -83,8 +83,8 @@ class RddStreamer[A: WTT /* t210322130619 - generalize to Streamer + as WTT */](
     this
       .asInstanceOf[RddStreamer[(K, V)]]
       .pype { dis =>
-        implicit val ctk: CT[K] = ctag[K]
-        implicit val ctv: CT[V] = ctag[V]
+        implicit val ctk: ClassTag[K] = ctag[K]
+        implicit val ctv: ClassTag[V] = ctag[V]
 
         that.tipe match {
           case StreamerType.ViewBased => // TODO: t210322111234 - [res] - determine if using hash join is implicit (if Seq) or explicit (via conf), or a combination
@@ -105,8 +105,8 @@ class RddStreamer[A: WTT /* t210322130619 - generalize to Streamer + as WTT */](
     this
       .asInstanceOf[RddStreamer[(K, V)]]
       .pype { self =>
-        implicit val ctk: CT[K] = ctag[K]
-        implicit val ctv: CT[V] = ctag[V]
+        implicit val ctk: ClassTag[K] = ctag[K]
+        implicit val ctv: ClassTag[V] = ctag[V]
 
         RddStreamerUtils._coGroup(joinType)(
           left  = self                 .rdd,
