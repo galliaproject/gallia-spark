@@ -3,35 +3,19 @@ import sbt.Keys._
 
 // ===========================================================================
 object GalliaCommonSettings {
-  val CurrentGalliaVersion = "0.5.0"
-
+  val scala3   = "3.3.1"
+  val scala213 = "2.13.12"
+  val scala212 = "2.12.18"
+  
   // ---------------------------------------------------------------------------
   val mainSettings = Seq(
-    organizationHomepage := Some(url("https://github.com/galliaproject")),
-    startYear            := Some(2021),
-    developers           :=
-      List(Developer(
-        id    = "anthony-cros",
-        name  = "Anthony Cros",
-        email = "contact.galliaproject@gmail.com",
-        url   = url("https://github.com/anthony-cros") )),
-
+         scalaVersion  :=      scala3,
+    crossScalaVersions := List(scala3, scala213, scala212),
     // ---------------------------------------------------------------------------
-         scalaVersion  := GalliaScalaVersions.supported.head,
-    crossScalaVersions := GalliaScalaVersions.supported)
-
-  // ===========================================================================
-  // TODO: t210121165741: -Xdisable-assertions (also turns off require?)  
-  scalacOptions ++= Seq(
-        "-encoding", "UTF-8",  
-      //"-Yimports:java.lang,scala,scala.Predef,scala.util.chaining,aptus.Anything_" -- not possible for 2.12 it seems (TODO: t210308154253 confirm)
-        "-Ywarn-value-discard") ++ 
-      // ---------------------------------------------------------------------------
-      (scalaBinaryVersion.value match {
-        case "2.13" => Seq("-Ywarn-unused:imports")
-        case _      => Seq("-Ywarn-unused-import" ) })
-
-}
+    scalacOptions     ++= (scalaBinaryVersion.value match {
+      case "3"    => GalliaScalacOptions.scala3Options
+      case "2.13" => GalliaScalacOptions.scala213Options
+      case "2.12" => GalliaScalacOptions.scala212Options })) }
 
 // ===========================================================================
 
