@@ -6,14 +6,14 @@ import atoms.utils.SuperMetaPair
 import gallia.spark._
 
 // ===========================================================================
-class RddStreamer[A: CWTT /* t210322130619 - generalize to Streamer + as WTT */](val rdd: RDD[A]) extends Streamer[A] {
+class RddStreamer[A: WTT /* t210322130619 - generalize to Streamer + as WTT */](val rdd: RDD[A]) extends Streamer[A] {
   override val tipe = StreamerType.RDDBased
 
   private def sc = this.rdd.sparkContext
 
   // ---------------------------------------------------------------------------
   private         def _rewrap(x: RDD[A]) = RddStreamer.from(x)
-  private[gallia] def _alter[B : CWTT](f: RDD[A] => RDD[B]): Streamer[B] = RddStreamer.from(f(rdd))
+  private[gallia] def _alter[B : WTT](f: RDD[A] => RDD[B]): Streamer[B] = RddStreamer.from(f(rdd))
 
   // ===========================================================================
   private[gallia] def selfClosingIterator:                 Iterator[A] = rdd.toLocalIterator // TODO: ok? nothing to close?
@@ -24,8 +24,8 @@ class RddStreamer[A: CWTT /* t210322130619 - generalize to Streamer + as WTT */]
   override def toList: List[A] = rdd.collect().toList
 
   // ===========================================================================
-  override def     map[B : CWTT](f: A =>             B ): Streamer[B] = rdd.    map(f)(ctag[B]).pype(RddStreamer.from)
-  override def flatMap[B : CWTT](f: A => gallia.Coll[B]): Streamer[B] = rdd.flatMap(f(_).asInstanceOf[gallia.SparkColl[B] /*FIXME:t210122102109*/])(ctag[B]).pype(RddStreamer.from)
+  override def     map[B : WTT](f: A =>             B ): Streamer[B] = rdd.    map(f)(ctag[B]).pype(RddStreamer.from)
+  override def flatMap[B : WTT](f: A => gallia.Coll[B]): Streamer[B] = rdd.flatMap(f(_).asInstanceOf[gallia.SparkColl[B] /*FIXME:t210122102109*/])(ctag[B]).pype(RddStreamer.from)
 
   override def filter(p: A => Boolean): Streamer[A] = rdd.filter(p).pype(RddStreamer.from)
   override def find  (p: A => Boolean): Option  [A] = rdd.filter(p).take(1).pipe { x => if (x.assert(_.size <= 1).size == 1) Some(x.head) else None }
@@ -59,27 +59,27 @@ class RddStreamer[A: CWTT /* t210322130619 - generalize to Streamer + as WTT */]
     _alter(_.sortBy(f, numPartitions = gallia.spark.numPartitions(sc))(meta.ord, meta.ctag))
 
   // ===========================================================================
-  override def groupByKey[K: CWTT, V: CWTT](implicit ev: A <:< (K, V)): Streamer[(K, List[V])] = {
+  override def groupByKey[K: WTT, V: WTT](implicit ev: A <:< (K, V)): Streamer[(K, List[V])] = {
     implicit val ctk: CT[K] = ctag[K]
     implicit val ctv: CT[V] = ctag[V]
 
     this.asInstanceOf[RddStreamer[(K, V)]]._alter { _.groupByKey.mapValues(_.toList) } }
 
   // ===========================================================================
-  override def zip[B >: A : CWTT](that: Streamer[B], combiner: (B, B) => B): Streamer[B] =
+  override def zip[B >: A : WTT](that: Streamer[B], combiner: (B, B) => B): Streamer[B] =
     RddStreamer.from(
       (  (this.asInstanceOf[RddStreamer[B]].rdd zip // ensures same size already (else throws a SparkException)
           that.pype(this.asRDDBased)       .rdd))(ctag[B])
         .map(combiner.tupled)(ctag[B]))
 
   // ---------------------------------------------------------------------------
-  override def union[B >: A : CWTT](that: Streamer[B]): Streamer[B] =
+  override def union[B >: A : WTT](that: Streamer[B]): Streamer[B] =
     RddStreamer.from(
       this.asInstanceOf[RddStreamer[B]].rdd ++
       that.pype(this.asRDDBased)       .rdd)
 
   // ===========================================================================
-  override def join[K: CWTT, V: CWTT](joinType: JoinType, combiner: (V, V) => V)(that: Streamer[(K, V)])(implicit ev: A <:< (K, V)): Streamer[V] =
+  override def join[K: WTT, V: WTT](joinType: JoinType, combiner: (V, V) => V)(that: Streamer[(K, V)])(implicit ev: A <:< (K, V)): Streamer[V] =
     this
       .asInstanceOf[RddStreamer[(K, V)]]
       .pype { dis =>
@@ -101,7 +101,7 @@ class RddStreamer[A: CWTT /* t210322130619 - generalize to Streamer + as WTT */]
       .pype(RddStreamer.from)
 
   // ---------------------------------------------------------------------------
-  override def coGroup[K: CWTT, V: CWTT](joinType: JoinType)(that: Streamer[(K, V)])(implicit ev: A <:< (K, V)): Streamer[(K, (Iterable[V], Iterable[V]))] =
+  override def coGroup[K: WTT, V: WTT](joinType: JoinType)(that: Streamer[(K, V)])(implicit ev: A <:< (K, V)): Streamer[(K, (Iterable[V], Iterable[V]))] =
     this
       .asInstanceOf[RddStreamer[(K, V)]]
       .pype { self =>
@@ -118,8 +118,8 @@ class RddStreamer[A: CWTT /* t210322130619 - generalize to Streamer + as WTT */]
   override def toIteratorBased: Streamer[A] = new DataRegenerationClosure[A] { def regenerate = () => closeabledIterator }.pipe(IteratorStreamer.from) // TODO: confirm closes everything that needs closing at the end of iteration?
 
   // ---------------------------------------------------------------------------
-           def asRDDBased[B >: A : CWTT](that: Streamer[B]): RddStreamer[B] = toMeBased(that).asInstanceOf[RddStreamer[B]]
-  override def toMeBased [B >: A : CWTT](that: Streamer[B]): Streamer   [B] = that.tipe match {
+           def asRDDBased[B >: A : WTT](that: Streamer[B]): RddStreamer[B] = toMeBased(that).asInstanceOf[RddStreamer[B]]
+  override def toMeBased [B >: A : WTT](that: Streamer[B]): Streamer   [B] = that.tipe match {
     case StreamerType.ViewBased     => that.toList.pype(sc.parallelize(_, numPartitions(sc))(ctag[B])).pype(RddStreamer.from)
     case StreamerType.IteratorBased => aptus.illegalState(data.multiple.CantMixIteratorAndRddProcessing)
     case StreamerType.RDDBased      => that }
@@ -127,6 +127,6 @@ class RddStreamer[A: CWTT /* t210322130619 - generalize to Streamer + as WTT */]
 
 // ===========================================================================
 object RddStreamer {
-  def from[A: CWTT](rdd: RDD[A]): Streamer[A] = new RddStreamer(rdd) }
+  def from[A: WTT](rdd: RDD[A]): Streamer[A] = new RddStreamer(rdd) }
 
 // ===========================================================================
