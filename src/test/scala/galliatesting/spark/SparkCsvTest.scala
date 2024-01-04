@@ -7,7 +7,6 @@ import gallia.spark._
 // ===========================================================================
 object SparkCsvTest {
 
-  // ---------------------------------------------------------------------------
   def apply(name: String)(input: String): Unit = {
     val sc: SparkContext = galliaSparkContext(name)
 

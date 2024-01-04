@@ -52,13 +52,9 @@ object SparkRddIn { // TODO t210330110143 - p2 - align with core's io.in abstrac
         // ---------------------------------------------------------------------------
         object _RddInputLines {
           def naive(sc: SparkContext, inputPath: String, dropOpt: Option[Int]): Option[Objs] =
-            inputPath
-              .pype(sc.textFile(_, numPartitions(sc)))
-              .pype(RddStreamer.from)
-              .map(line => obj(_line -> line))
-              .pipeOpt(dropOpt)(n => _.drop(n)) // TODO: t210330110534 - as separate atom
-              .pipe(Objs.build)
-              .in.some }
+            Utils.parseObjsOpt(sc, inputPath)(
+                dropOpt, skipEmptyLines = true /* TODO: t240104142220 - limit to last one only? */) {
+              x => gallia.obj(_line -> x) } }
 
     // ===========================================================================
     case class RddInputObjs(schema: Cls, rdd: RDD[Obj]) extends ActionIZd {
@@ -89,15 +85,26 @@ object SparkRddIn { // TODO t210330110143 - p2 - align with core's io.in abstrac
         object _RddInputJsonLines {
 
           def naive(sc: SparkContext, inputPath: String, schema: Cls): Option[Objs] =
-            inputPath
-              .pype(sc.textFile(_, numPartitions(sc)))
-              .pype(RddStreamer.from)
-              .flatMap { line =>
-                if (line.trim.isEmpty) None
-                else                   Some(data.json.GsonToObj.fromObjectString(line)) }
-              .map(data.json.GsonToGalliaData.convertRecursively(schema))
-              .pipe(Objs.build)
-              .in.some }
+            Utils.parseObjsOpt(sc, inputPath)(
+                dropOpt = None, skipEmptyLines = true) {
+              data.json.GsonToGalliaData.parseRecursively(schema, _) } }
+
+  // ===========================================================================
+  private object Utils {
+
+    def parseObjsOpt(sc: SparkContext, inputPath: String)(dropOpt: Option[Int], skipEmptyLines: Boolean)(lineToObj: Line => Obj): Option[Objs] =
+      inputPath
+        .pype(sc.textFile(_, numPartitions(sc)))
+        .pype(RddStreamer.from)
+
+        // ---------------------------------------------------------------------------
+        .pipeOpt(dropOpt)       (n => _.drop(n))                         // TODO: t210330110534 - as separate atom
+        .pipeIf (skipEmptyLines)(_.flatMap(_.in.noneIf(_.trim.isEmpty))) // TODO: t210330110534 - as separate atom
+
+        // ---------------------------------------------------------------------------
+        .map (lineToObj)
+        .pipe(Objs.build)
+        .in.some }
 
 }
 

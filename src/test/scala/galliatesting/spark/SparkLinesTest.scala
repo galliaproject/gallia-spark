@@ -24,8 +24,7 @@ object SparkLinesTest {
         _ == bobjs(
             bobj(_line -> "FOO,BAZ"),
             bobj(_line -> "BAR1,1"),
-            bobj(_line -> "BAR2,2"),
-            bobj(_line -> ""))
+            bobj(_line -> "BAR2,2"))
           .forceAObjs) } }
 
 // ===========================================================================

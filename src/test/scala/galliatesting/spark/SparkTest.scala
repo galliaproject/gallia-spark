@@ -6,11 +6,11 @@ import aptus._
 
 // ===========================================================================
 object SparkTest extends TestSuite  { // provided lib: c220519162721@sbt
-  private val  CsvInputFile  = "/data/test/test.csv" // input is: foo,baz\nbar1,1\nbar2,2
-  private val JsonlInputFile = "/data/test/test.jsonl"
-  private val  AvroInputFile = "/data/test/serialization/avro/episodes.avro"
+  private val ParentDir: String = getClass.getResource(s"/spark").getPath
 
-//FIXME: t240102135348 - must accept trailing newline...
+  // ---------------------------------------------------------------------------
+  private val  CsvInputFile  = ParentDir / "test.csv" // input is: foo,baz\nbar1,1\nbar2,2\n
+  private val JsonlInputFile = ParentDir / "test.jsonl"
 
   // ---------------------------------------------------------------------------
   val tests = Tests {
@@ -22,7 +22,8 @@ object SparkTest extends TestSuite  { // provided lib: c220519162721@sbt
         out = "/tmp/spark_test.csv") }
 
     // ===========================================================================
-    test("spark-csv")(SparkCsvTest("spark-csv")(CsvInputFile))
+    test("spark-csv")                    (SparkCsvTest("spark-csv")(CsvInputFile))
+    test("spark-csv-no-trailing-newline")(SparkCsvTest("spark-csv-no-trailing-newline")(ParentDir / "test_no_trailing_newline.csv"))
 
     // ---------------------------------------------------------------------------
     test("spark-lines-plain")(SparkLinesTest("spark-lines-plain")(CsvInputFile))
@@ -36,10 +37,11 @@ object SparkTest extends TestSuite  { // provided lib: c220519162721@sbt
     test("spark-jsonl")(SparkJsonLinesTest("spark-jsonl")(JsonlInputFile))
 
     // ---------------------------------------------------------------------------
-    //test("spark-avro")(SparkAvroTest("spark-avro")(AvroInputFile)) - WIP
+    //test("spark-avro")(SparkAvroTest("spark-avro")(ParentDir / "serialization/avro/episodes.avro")) - WIP
 
     // ---------------------------------------------------------------------------
-    test("spark-register")(galliaSparkRegister("spark-register")) }
+    test("spark-register")(galliaSparkRegister("spark-register"))
+  }
 
   // ===========================================================================
   private def galliaSparkRegister(name: String): Unit = {
