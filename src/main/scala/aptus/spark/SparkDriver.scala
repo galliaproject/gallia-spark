@@ -35,8 +35,7 @@ object SparkDriver {
           // TODO: or as "whatever is in cache?"
 
           //println("stopping spark-context")
-          sc.stop() }
-      }
+          sc.stop() } }
 
       sc
     }

@@ -6,7 +6,7 @@ import atoms.utils.SuperMetaPair
 import gallia.spark._
 
 // ===========================================================================
-class RddStreamer[A: WTT /* t210322130619 - generalize to Streamer + as WTT */](val rdd: RDD[A]) extends Streamer[A] {
+class RddStreamer[A: WTT](val rdd: RDD[A]) extends Streamer[A] {
   override val tipe = StreamerType.RDDBased
 
   private def sc = this.rdd.sparkContext

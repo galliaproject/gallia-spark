@@ -6,21 +6,21 @@ import aptus._
 // ===========================================================================
 object SparkRddIn { // TODO t210330110143 - p2 - align with core's io.in abstraction
 
-  def rdd  (sc: SparkContext, schema: Cls, rdd: RDD[Obj]): HeadS = RddInputObjs (sc, schema, rdd)      .pipe(heads.Head.inputZ)
-  def lines(sc: SparkContext, path: String)              : HeadS = RddInputLines(sc, path, drop = None).pipe(heads.Head.inputZ)
+  def rdd  (sc: SparkContext, schema: Cls, rdd: RDD[Obj]): HeadS = RddInputObjs (sc, schema, rdd)         .pipe(heads.Head.inputZ)
+  def lines(sc: SparkContext, path: String)              : HeadS = RddInputLines(sc, path, dropOpt = None).pipe(heads.Head.inputZ)
 
   // ---------------------------------------------------------------------------
   def jsonLines(sc: SparkContext, schema: Cls, path: String) : HeadS = RddInputJsonLines(sc, schema, path).pipe(heads.Head.inputZ)
 
   // ---------------------------------------------------------------------------
   def csvWithHeader(sc: SparkContext, path: String)(key1: KeyW, more: KeyW*): HeadS =
-          RddInputLines(sc, path, drop = Some(1))
+          RddInputLines(sc, path, dropOpt = Some(1))
             .pipe(heads.Head.inputZ)
             .pipe(csvFromLine(key1, more:_*))
 
       // ---------------------------------------------------------------------------
       def tsvWithHeader(sc: SparkContext, path: String)(key1: KeyW, more: KeyW*): HeadS =
-          RddInputLines(sc, path, drop = Some(1))
+          RddInputLines(sc, path, dropOpt = Some(1))
             .pipe(heads.Head.inputZ)
             .pipe(tsvFromLine(key1, more:_*))
 
@@ -39,21 +39,26 @@ object SparkRddIn { // TODO t210330110143 - p2 - align with core's io.in abstrac
         .unnestAllFrom      (_line)
 
     // ===========================================================================
-    case class RddInputLines(sc: SparkContext, inputPath: String, drop: Option[Int]) extends ActionIZd { // TODO: charset (t210121164950)/compression(t210121164951)
+    case class RddInputLines(sc: SparkContext, inputPath: String, dropOpt: Option[Int]) extends ActionIZd { // TODO: charset (t210121164950)/compression(t210121164951)
         def vldt   = Nil//TODO + check drop > 0 if provided + not "too big" (see t210312092358)
         def _meta  = Cls.Line
-        def atomiz = _RddInputLines(sc, inputPath, drop) }
+        def atomiz = _RddInputLines(sc, inputPath, dropOpt) }
 
       // ===========================================================================
-      case class _RddInputLines(sc: SparkContext, inputPath: String, drop: Option[Int]) extends AtomIZ {
-        def naive: Option[Objs] =
-          sc
-            .textFile(inputPath, numPartitions(sc))
-            .pype(RddStreamer.from)
-            .map(line => obj(_line -> line))
-            .pipeOpt(drop)(n => _.drop(n)) // TODO: t210330110534 - as separate atom
-            .pipe(Objs.build)
-            .in.some }
+      case class _RddInputLines(sc: SparkContext, inputPath: String, dropOpt: Option[Int]) extends AtomIZ {
+          /** IMPORTANT NOTE: 240104135138 - with scala 3, we HAVE to externalize it if we pass sc (to investigate) */
+          def naive: Option[Objs] = _RddInputLines.naive(sc, inputPath, dropOpt) }
+
+        // ---------------------------------------------------------------------------
+        object _RddInputLines {
+          def naive(sc: SparkContext, inputPath: String, dropOpt: Option[Int]): Option[Objs] =
+            inputPath
+              .pype(sc.textFile(_, numPartitions(sc)))
+              .pype(RddStreamer.from)
+              .map(line => obj(_line -> line))
+              .pipeOpt(dropOpt)(n => _.drop(n)) // TODO: t210330110534 - as separate atom
+              .pipe(Objs.build)
+              .in.some }
 
     // ===========================================================================
     case class RddInputObjs(sc: SparkContext, schema: Cls, rdd: RDD[Obj]) extends ActionIZd {
@@ -62,7 +67,8 @@ object SparkRddIn { // TODO t210330110143 - p2 - align with core's io.in abstrac
         def atomiz = _RddInputObjs(sc, rdd) }
 
       // ===========================================================================
-      case class _RddInputObjs(sc: SparkContext, rdd: RDD[Obj]) extends AtomIZ {
+      case class _RddInputObjs(
+ignored: SparkContext, rdd: RDD[Obj]) extends AtomIZ {
         def naive: Option[Objs] =
           new RddStreamer[Obj](rdd)
             .pipe(Objs.build)
@@ -72,12 +78,12 @@ object SparkRddIn { // TODO t210330110143 - p2 - align with core's io.in abstrac
     case class RddInputJsonLines(sc: SparkContext, schema: Cls, inputPath: String) extends ActionIZd { // TODO: charset (t210121164950)/compression(t210121164951)
         def vldt   = Nil // TODO
         def _meta  = schema
-        def atomiz = _RddInputJsonLines(sc,
-          schema//.fields.head.info.union.head.multiple.toString
-          , inputPath) }
+        def atomiz = _RddInputJsonLines(
+          sc, schema, inputPath) }
 
       // ===========================================================================
       case class _RddInputJsonLines(sc: SparkContext, schema: Cls, inputPath: String) extends AtomIZ {
+          /** IMPORTANT NOTE: 240104135138 - with scala 3, we HAVE to externalize it if we pass sc (to investigate) */
           def naive: Option[Objs] = _RddInputJsonLines.naive(sc, inputPath, schema) }
 
         // ---------------------------------------------------------------------------
