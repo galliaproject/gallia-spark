@@ -6,7 +6,7 @@ import aptus._
 // ===========================================================================
 object SparkRddIn { // TODO t210330110143 - p2 - align with core's io.in abstraction
 
-  def rdd  (sc: SparkContext, schema: Cls, rdd: RDD[Obj]): HeadS = RddInputObjs (sc, schema, rdd)         .pipe(heads.Head.inputZ)
+  def rdd  (sc: SparkContext, schema: Cls, rdd: RDD[Obj]): HeadS = RddInputObjs (schema, rdd)             .pipe(heads.Head.inputZ)
   def lines(sc: SparkContext, path: String)              : HeadS = RddInputLines(sc, path, dropOpt = None).pipe(heads.Head.inputZ)
 
   // ---------------------------------------------------------------------------
@@ -61,14 +61,13 @@ object SparkRddIn { // TODO t210330110143 - p2 - align with core's io.in abstrac
               .in.some }
 
     // ===========================================================================
-    case class RddInputObjs(sc: SparkContext, schema: Cls, rdd: RDD[Obj]) extends ActionIZd {
+    case class RddInputObjs(schema: Cls, rdd: RDD[Obj]) extends ActionIZd {
         def vldt   = Nil//TODO
         def _meta  = schema
-        def atomiz = _RddInputObjs(sc, rdd) }
+        def atomiz = _RddInputObjs(rdd) }
 
       // ===========================================================================
-      case class _RddInputObjs(
-ignored: SparkContext, rdd: RDD[Obj]) extends AtomIZ {
+      case class _RddInputObjs(rdd: RDD[Obj]) extends AtomIZ {
         def naive: Option[Objs] =
           new RddStreamer[Obj](rdd)
             .pipe(Objs.build)
