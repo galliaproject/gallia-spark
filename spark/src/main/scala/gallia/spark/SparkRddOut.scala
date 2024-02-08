@@ -10,7 +10,7 @@ object SparkRddOut { // t210330110144 - p2 - align with core's io.out abstractio
       //no compression: sc.hadoopConfiguration.set("mapred.output.compress", "false") + DefaultCodec
 
     // ---------------------------------------------------------------------------
-    case class RddOutputZ(uriString: String) extends ActionZOb {
+    case class RddOutputZ(uriString: String) extends ActionZO1N {
         def vldt   (c: Cls) = Nil //TODO
         def atomzos(c: Cls) = Seq(
             _SchemaRddOutput(c, uriString, gallia.atoms.AtomsXO.DefaultSchemaSuffix),

@@ -39,7 +39,7 @@ object SparkRddIn { // TODO t210330110143 - p2 - align with core's io.in abstrac
         .unnestAllFrom      (_line)
 
     // ===========================================================================
-    case class RddInputLines(sc: SparkContext, inputPath: String, dropOpt: Option[Int]) extends ActionIZd { // TODO: charset (t210121164950)/compression(t210121164951)
+    case class RddInputLines(sc: SparkContext, inputPath: String, dropOpt: Option[Int]) extends ActionIZ01 { // TODO: charset (t210121164950)/compression(t210121164951)
         def vldt   = Nil//TODO + check drop > 0 if provided + not "too big" (see t210312092358)
         def _meta  = Cls.Line
         def atomiz = _RddInputLines(sc, inputPath, dropOpt) }
@@ -57,7 +57,7 @@ object SparkRddIn { // TODO t210330110143 - p2 - align with core's io.in abstrac
               x => gallia.obj(_line -> x) } }
 
     // ===========================================================================
-    case class RddInputObjs(schema: Cls, rdd: RDD[Obj]) extends ActionIZd {
+    case class RddInputObjs(schema: Cls, rdd: RDD[Obj]) extends ActionIZ01 {
         def vldt   = Nil//TODO
         def _meta  = schema
         def atomiz = _RddInputObjs(rdd) }
@@ -70,7 +70,7 @@ object SparkRddIn { // TODO t210330110143 - p2 - align with core's io.in abstrac
             .in.some }
 
     // ===========================================================================
-    case class RddInputJsonLines(sc: SparkContext, schema: Cls, inputPath: String) extends ActionIZd { // TODO: charset (t210121164950)/compression(t210121164951)
+    case class RddInputJsonLines(sc: SparkContext, schema: Cls, inputPath: String) extends ActionIZ01 { // TODO: charset (t210121164950)/compression(t210121164951)
         def vldt   = Nil // TODO
         def _meta  = schema
         def atomiz = _RddInputJsonLines(

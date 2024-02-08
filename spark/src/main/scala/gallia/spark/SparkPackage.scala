@@ -4,17 +4,22 @@ import aptus.spark._
 
 // ===========================================================================
 package object spark {
-  type SparkContext = org.apache.spark.SparkContext
-
-  type RDD     [A]  = org.apache.spark.rdd.RDD[A]
-
   type Line = aptus.Line
+
+  // ---------------------------------------------------------------------------
+  type SparkContext = org.apache.spark.SparkContext
+  type RDD[A]       = org.apache.spark.rdd.RDD[A]
 
   // ---------------------------------------------------------------------------
   type Streamer[A] = gallia.streamer.Streamer[A]
 
   type RddStreamer[A] = gallia.streamer.RddStreamer[A]
   val  RddStreamer    = gallia.streamer.RddStreamer
+
+  // ---------------------------------------------------------------------------
+  type ActionIZ01 = actions.boilerplate.ActionBoilerplate.ActionIZ01
+  type ActionZZ01 = actions.boilerplate.ActionBoilerplate.ActionZZ01
+  type ActionZO1N = actions.boilerplate.ActionBoilerplate.ActionZO1N
 
   // ===========================================================================
   private[gallia] implicit class GalliaSparkAnything_[A](value: A) {

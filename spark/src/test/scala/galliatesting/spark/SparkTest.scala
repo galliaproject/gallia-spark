@@ -5,6 +5,14 @@ import utest._
 import aptus._
 
 // ===========================================================================
+/*
+ must use:
+   export JAVA_OPTS="--add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED"
+   sbt [...]
+ to address the likes of:
+   java.lang.IllegalAccessError: class org.apache.spark.storage.StorageUtils$
+ TODO: t240208113030 - any way around it from testing framework?
+ */
 object SparkTest extends TestSuite  { // provided lib: c220519162721@sbt
   private val ParentDir: String = getClass.getResource(s"/spark").getPath
 

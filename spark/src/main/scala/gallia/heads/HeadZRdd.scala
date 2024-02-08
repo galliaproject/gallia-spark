@@ -7,7 +7,7 @@ import gallia.spark._
 trait HeadZRdd { val headZ: HeadZ
   def toRddBased: HeadZ = headZ ::+ ToRddBased
 
-    case object ToRddBased extends IdentityVM1 with ActionZZd { def atomzz = _ToRddBased }
+    case object ToRddBased extends IdentityVM1 with ActionZZ01 { def atomzz = _ToRddBased }
 
       case object _ToRddBased extends AtomZZ { def naive(z: Objs) = z._toRddBased }
 
@@ -22,7 +22,7 @@ trait HeadZRdd { val headZ: HeadZ
     headZ
       .zo(SparkRddOut.RddOutputZ(path))
       .end ()
-      .runz().either match {
+      .runz().resultEither match {
         case Left (errors) => throw errors.metaErrorOpt.get
         case Right(_)      => () } } }
 
